@@ -16,7 +16,7 @@ class Homestead
     end
 
     # Configure Port Forwarding To The Box
-    config.vm.network "forwarded_port", guest: 80, host: 8000
+    config.vm.network "forwarded_port", guest: 80, host: settings["port_http"] ||= 8000
     config.vm.network "forwarded_port", guest: 3306, host: 33060
     config.vm.network "forwarded_port", guest: 5432, host: 54320
 
@@ -56,6 +56,12 @@ class Homestead
             s.args = [site["map"], site["to"]]
           end
       end
+      if (site.has_key?("db"))
+        config.vm.provision "shell" do |s|
+          s.inline = "mysql -u homestead -psecret -e \"CREATE DATABASE IF NOT EXISTS $1 CHARACTER SET utf8 COLLATE utf8_general_ci\""
+          s.args = [site["db"]]
+        end
+      end
     end
 
     # Configure All Of The Server Environment Variables
@@ -67,5 +73,15 @@ class Homestead
         end
       end
     end
+
+    # Run Any Optional Commands
+    if settings.has_key?("commands")
+      settings["commands"].each do |command|
+        config.vm.provision "shell" do |s|
+          s.inline = command
+        end
+      end
+    end
+
   end
 end
